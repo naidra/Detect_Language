@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLD3 Language Detector - WebAssembly Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.ready {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.5em;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .examples-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .example-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Language Detector</h1>
+        <p class="subtitle">Powered by CLD3 compiled to WebAssembly</p>
+        
+        <div id="status" class="status loading">
+            <div class="spinner"></div>
+            <span>Loading WebAssembly module...</span>
+        </div>
+
+        <textarea id="textInput" placeholder="Enter text to detect its language..." disabled>Hello, how are you today?</textarea>
+        
+        <button id="detectBtn" disabled>Detect Language</button>
+        
+        <div id="result" class="result">
+            <div class="result-label">Detected Language:</div>
+            <div class="result-value" id="resultValue">-</div>
+        </div>
+
+        <div class="examples">
+            <div class="examples-title">Try these examples:</div>
+            <div class="example-buttons">
+                <button class="example-btn" data-text="Hello, how are you?">English</button>
+                <button class="example-btn" data-text="Bonjour, comment allez-vous?">French</button>
+                <button class="example-btn" data-text="Hola, ¿cómo estás?">Spanish</button>
+                <button class="example-btn" data-text="Hallo, wie geht es dir?">German</button>
+                <button class="example-btn" data-text="你好，你好吗？">Chinese</button>
+                <button class="example-btn" data-text="こんにちは、お元気ですか？">Japanese</button>
+                <button class="example-btn" data-text="Привет, как дела?">Russian</button>
+                <button class="example-btn" data-text="مرحبا، كيف حالك؟">Arabic</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="cld3_wasm.js"></script>
+    <script>
+        let cld3Module = null;
+        let useServerAPI = false;
+        let isInitialized = false;
+        const statusEl = document.getElementById('status');
+        const textInput = document.getElementById('textInput');
+        const detectBtn = document.getElementById('detectBtn');
+        const resultDiv = document.getElementById('result');
+        const resultValue = document.getElementById('resultValue');
+
+        // Check if running on server with working API
+        async function checkServerAvailability() {
+            try {
+                const response = await fetch('/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Only use server API if WASM is actually loaded on server
+                    if (data.wasmLoaded === true) {
+                        useServerAPI = true;
+                        console.log('✓ Using server API for language detection');
+                        return true;
+                    } else {
+                        console.log('Server available but WASM not loaded - using client-side WASM');
+                    }
+                }
+            } catch (err) {
+                console.log('Server API not available - using client-side WASM');
+            }
+            return false;
+        }
+
+        // Load the WASM module (client-side)
+        async function loadWasmModule() {
+            return new Promise((resolve) => {
+                // Wait for createCLD3Module to be available (loaded from cld3_wasm.js)
+                const checkModule = setInterval(() => {
+                    if (typeof createCLD3Module !== 'undefined') {
+                        clearInterval(checkModule);
+                        createCLD3Module()
+                            .then(module => {
+                                cld3Module = module;
+                                console.log('✓ WASM module loaded successfully');
+                                resolve(true);
+                            })
+                            .catch(err => {
+                                console.error('Failed to instantiate WASM module:', err);
+                                resolve(false);
+                            });
+                    }
+                }, 50);
+                
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkModule);
+                    if (!cld3Module) {
+                        console.error('WASM module load timeout');
+                        resolve(false);
+                    }
+                }, 10000);
+            });
+        }
+
+        // Initialize application
+        async function initialize() {
+            if (isInitialized) return;
+            isInitialized = true;
+            
+            // Always try to load client-side WASM first
+            statusEl.className = 'status loading';
+            statusEl.innerHTML = '<div class="spinner"></div> <span>Loading language detector...</span>';
+            
+            const wasmLoaded = await loadWasmModule();
+            
+            if (wasmLoaded && cld3Module && cld3Module.detectLanguage) {
+                // Client-side WASM loaded successfully
+                statusEl.className = 'status ready';
+                statusEl.innerHTML = '✓ Ready! (Browser mode) Enter text to detect language.';
+                textInput.disabled = false;
+                detectBtn.disabled = false;
+            } else {
+                // WASM failed to load, try server API
+                const serverAvailable = await checkServerAvailability();
+                
+                if (serverAvailable) {
+                    statusEl.className = 'status ready';
+                    statusEl.innerHTML = '✓ Ready! (Server mode) Enter text to detect language.';
+                    textInput.disabled = false;
+                    detectBtn.disabled = false;
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.innerHTML = '✗ Failed to load language detector. Please ensure cld3_wasm.wasm is in the same directory as index.html.';
+                    textInput.disabled = true;
+                    detectBtn.disabled = true;
+                }
+            }
+        }
+
+        // Detect language function (works with both server API and client WASM)
+        async function detectLanguage() {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('Please enter some text first!');
+                return;
+            }
+
+            if (!isInitialized || (!useServerAPI && !cld3Module)) {
+                alert('Language detector is not ready. Please refresh the page.');
+                return;
+            }
+
+            detectBtn.disabled = true;
+            detectBtn.textContent = 'Detecting...';
+
+            try {
+                let language;
+
+                if (useServerAPI && cld3Module) {
+                    // Prefer client-side WASM if available, even if server is available
+                    console.log('Using client-side WASM for detection');
+                    if (!cld3Module.detectLanguage) {
+                        throw new Error('WASM module not properly loaded');
+                    }
+                    language = cld3Module.detectLanguage(text);
+                    language = language === 'unknown' ? 'UNKNOWN' : language.toUpperCase();
+                } else if (useServerAPI) {
+                    // Use server API only if client WASM is not available
+                    console.log('Using server API for detection');
+                    const response = await fetch('/api/detect', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ text: text })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Server error');
+                    }
+
+                    const data = await response.json();
+                    if (!data.success) {
+                        throw new Error(data.error);
+                    }
+                    language = data.language;
+                } else {
+                    // Use client-side WASM
+                    console.log('Using client-side WASM for detection');
+                    if (!cld3Module || !cld3Module.detectLanguage) {
+                        throw new Error('WASM module not properly loaded');
+                    }
+                    language = cld3Module.detectLanguage(text);
+                    language = language === 'unknown' ? 'UNKNOWN' : language.toUpperCase();
+                }
+
+                resultValue.textContent = language;
+                resultDiv.classList.add('show');
+            } catch (err) {
+                console.error('Detection error:', err);
+                alert('Error detecting language: ' + err.message);
+            } finally {
+                detectBtn.disabled = false;
+                detectBtn.textContent = 'Detect Language';
+            }
+        }
+
+        // Event listeners
+        detectBtn.addEventListener('click', detectLanguage);
+        
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                detectLanguage();
+            }
+        });
+
+        // Example buttons
+        document.querySelectorAll('.example-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                textInput.value = btn.dataset.text;
+                detectLanguage();
+            });
+        });
+
+        // Initialize on page load
+        initialize();
+    </script>
+</body>
+</html>
