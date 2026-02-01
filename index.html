@@ -199,6 +199,79 @@
             color: white;
             transform: translateY(-2px);
         }
+
+        .api-docs {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .api-title {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .api-subtitle {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .api-card {
+            background: #f8f9fa;
+            border: 1px solid #e6e6e6;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .api-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .api-method {
+            background: #667eea;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.75em;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .api-path {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .api-desc {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .api-code {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.82em;
+            overflow-x: auto;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .api-note {
+            font-size: 0.85em;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -231,6 +304,42 @@
                 <button class="example-btn" data-text="こんにちは、お元気ですか？">Japanese</button>
                 <button class="example-btn" data-text="Привет, как дела?">Russian</button>
                 <button class="example-btn" data-text="مرحبا، كيف حالك؟">Arabic</button>
+            </div>
+        </div>
+
+        <div class="api-docs">
+            <div class="api-title">API Documentation</div>
+            <div class="api-subtitle">Use these endpoints if you want to call the detector from your own app.</div>
+
+            <div class="api-card">
+                <div class="api-row">
+                    <span class="api-method">GET</span>
+                    <span class="api-path">/api/health</span>
+                </div>
+                <div class="api-desc">Health check for the server and WebAssembly status.</div>
+                <div class="api-code">{
+  "status": "ok",
+  "wasmLoaded": true
+}</div>
+            </div>
+
+            <div class="api-card">
+                <div class="api-row">
+                    <span class="api-method">POST</span>
+                    <span class="api-path">/api/detect</span>
+                </div>
+                <div class="api-desc">Detects the language for the provided text.</div>
+                <div class="api-code">Request
+{
+  "text": "Hello, how are you?"
+}
+
+Response
+{
+  "success": true,
+  "language": "ENGLISH"
+}</div>
+                <div class="api-note">Content-Type: application/json</div>
             </div>
         </div>
     </div>
