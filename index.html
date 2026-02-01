@@ -313,22 +313,10 @@
 
             <div class="api-card">
                 <div class="api-row">
-                    <span class="api-method">GET</span>
-                    <span class="api-path">/api/health</span>
-                </div>
-                <div class="api-desc">Health check for the server and WebAssembly status.</div>
-                <div class="api-code">{
-  "status": "ok",
-  "wasmLoaded": true
-}</div>
-            </div>
-
-            <div class="api-card">
-                <div class="api-row">
                     <span class="api-method">POST</span>
                     <span class="api-path">/api/detect</span>
                 </div>
-                <div class="api-desc">Detects the language for the provided text.</div>
+                <div class="api-desc">Detects the language for the provided text using Google's CLD3 machine learning model. Supports 100+ languages with high accuracy. This is the recommended method for language detection.</div>
                 <div class="api-code">Request
 {
   "text": "Hello, how are you?"
@@ -337,9 +325,35 @@
 Response
 {
   "success": true,
-  "language": "ENGLISH"
+  "language": "ENGLISH",
+  "text": "Hello, how are you?"
 }</div>
-                <div class="api-note">Content-Type: application/json</div>
+                <div class="api-note">
+                    <strong>Method:</strong> POST | <strong>Content-Type:</strong> application/json<br/>
+                    <strong>Parameters:</strong> text (string, required) - The text to detect<br/>
+                    <strong>Returns:</strong> Language code (ISO 639-1) and success status
+                </div>
+            </div>
+
+            <div class="api-card">
+                <div class="api-row">
+                    <span class="api-method">GET</span>
+                    <span class="api-path">/api/detect</span>
+                </div>
+                <div class="api-desc">Alternative GET method for language detection. Useful for quick queries without JSON payload.</div>
+                <div class="api-code">Request
+GET /api/detect?text=Hello%20world
+
+Response
+{
+  "success": true,
+  "language": "ENGLISH",
+  "confidence": "high"
+}</div>
+                <div class="api-note">
+                    <strong>Query Parameters:</strong> text or q (the text to detect)<br/>
+                    <strong>Note:</strong> URL encode special characters
+                </div>
             </div>
         </div>
     </div>
